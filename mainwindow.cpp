@@ -37,16 +37,9 @@ MainWindow::MainWindow(QWidget *parent)
         if (address.protocol() == QAbstractSocket::IPv4Protocol) {
             ui->cb_IpAddr->addItem(address.toString());
             ip_arr.insert(address.toString());
-//            ui->cb_IpAddr->currentText();
         }
     //           qDebug() << "本机IP地址: " << address.toString();
     }
-
-    src_ip.setAddress(ui->cb_IpAddr->currentText());
-    src_port=ui->lEditIpPort->text().toInt(); //从 端口文本框中获取端口，设置到源端口上
-
-
-
     create_file();
     //给输入框设置规则 Qtextedit没有setValidator,只有Qlineedit有，因此
     //使用信号与槽函数
@@ -55,7 +48,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     Code_mask_type=QTextCodec::codecForName("GBK");
 
-    connect(ui->cBoxNetType, SIGNAL(currentIndexChanged(int)), this, SLOT(onComboxSelect(int)));//改 显示文本框的
+    connect(ui->cBoxNetType, SIGNAL(currentIndexChanged(int)), this, SLOT(onComboxSelect(int)));//选择类型不同，显示不同的样式
 
 
     connect(ui->tEditSendText,&QTextEdit::textChanged,this,&MainWindow::tEditSendText_send_state);//输入文本框变动，检测输入格式
@@ -91,6 +84,9 @@ void MainWindow::insertcombox1(QSet<QString> arr){
             ui->lEditIpPort->setText(curr_str.split(":").at(1));    //port控件赋值
         }
 }
+
+
+
 void MainWindow::insertcombox2(QSet<QString> arr){
     ui->cBox_ip_port2->clear();
     for (const QString& str : arr) {
@@ -147,20 +143,20 @@ void MainWindow::onComboxSelect(int index)
 void MainWindow::on_pBtnNetCnnt_clicked(bool checked)
 {
 //    按钮按下去，不松开，一直是ture,checked是true
-    sndDataCnt=0;
-    rcvDataCnt=0;
+    sndDataCnt=0;//收集发送的字节数
+    rcvDataCnt=0;//收集接收的字节数
     if(checked){
-
+        src_ip.setAddress(ui->cb_IpAddr->currentText());
+        src_port=ui->lEditIpPort->text().toInt(); //从 端口文本框中获取端口，设置到源端口上
 //        qDebug()<<ui->cBoxNetType->currentText();
 //      qDebug()<<checked<<endl; //输出true
         if(ui->cBoxNetType->currentIndex() == UDP_MODE){
         //创建UDP套接字
             udpSocket = new QUdpSocket(this);
-
             //接收数据，需要bind一个端口，这个端口得是有效端口，就是没有被占用的
 //            bool result = udpSocket->bind(src_port);
-           bool result = udpSocket->bind(src_ip,src_port);
-//           qDebug()<<src_ip<<src_port<<"123";
+
+            bool result = udpSocket->bind(src_ip,src_port);
             if(!result){
                 ui->pBtnNetCnnt->setChecked(0);
                 QMessageBox::information(this, tr("错误"), tr("UDP绑定端口失败!"));
@@ -169,15 +165,13 @@ void MainWindow::on_pBtnNetCnnt_clicked(bool checked)
                 ui->cBoxNetType->setEnabled(false);
                 ui->cb_IpAddr->setEnabled(false);
                 ui->lEditIpPort->setEnabled(false);
-
+                connect(udpSocket, SIGNAL(readyRead()), this, SLOT(udpDataReceived()));//这个是udp接收数据的，一直阻塞，来数据触发udpDataReceived函数
                 ui->CurState->setText(tr("建立UDP连接成功"));
                 //成功就把远程的框展示出来
                 ui->widget->setVisible(true);//dst_ip和port控件展示
             }
-
-            connect(udpSocket, SIGNAL(readyRead()), this, SLOT(udpDataReceived()));//这个是udp接收数据的，一直阻塞，来数据触发udpDataReceived函数
-
-        }else if(ui->cBoxNetType->currentIndex() == TCP_SERVER_MODE){
+        }
+        else if(ui->cBoxNetType->currentIndex() == TCP_SERVER_MODE){
             ui->widget->setVisible(true);
             ui->labelUdp->setText("客户端");
 
@@ -191,7 +185,6 @@ void MainWindow::on_pBtnNetCnnt_clicked(bool checked)
                 QMessageBox::critical(this, "失败", "服务器启动失败");
                 return;
             }else{
-
                 ui->cBoxNetType->setEnabled(false);
                 ui->cb_IpAddr->setEnabled(false);
                 ui->lEditIpPort->setEnabled(false);
@@ -202,7 +195,6 @@ void MainWindow::on_pBtnNetCnnt_clicked(bool checked)
             ui->cBox_ip_port2->clear();
             ui->cBox_ip_port2->addItem("All Connections (0)");
             ui->cBox_ip_port2->setCurrentIndex(0);
-//            ui->cBox_ip_port2->setCurrentText();
 
             connect(tcpServer_socket, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
 
@@ -260,8 +252,10 @@ void MainWindow::on_pBtnNetCnnt_clicked(bool checked)
             delete udpSocket;
         } else if(ui->cBoxNetType->currentIndex() == TCP_SERVER_MODE) {//断开TCP服务器链接
             tcpServer_socket->close();
+            delete tcpServer_socket;
         } else if(ui->cBoxNetType->currentIndex() == TCP_CLIENT_MODE) {//断开TCP客户端链接
             tcpSocket->close();
+            delete tcpSocket;
         }
 
         insert_file(ip_port_arr);//arr->file
@@ -292,6 +286,9 @@ void MainWindow::tEditSendText_send_state(){
 
         }else if(temp_char.unicode()==10){//10是回车，也就是发送
             ui->tEditSendText->undo();
+            if(ui->pBtnSendData->isEnabled()){
+                on_pBtnSendData_clicked();
+            }
 //            qDebug()<<"发送ascii";
 
         }else { //非法输入
@@ -305,6 +302,7 @@ void MainWindow::tEditSendText_send_state(){
             (65 <= temp_char.unicode() && temp_char.unicode() <= 69) ||
             (97 <= temp_char.unicode() && temp_char.unicode() <= 101)||
                 temp_char.unicode()==32||temp_char.unicode()==0 ) {
+            qDebug()<<temp_char.unicode();
             //48-57 <数字0-9>
 //                65-69 < 大写字母 A-E >
 //                97-101 < 小写字母 -e>
@@ -313,6 +311,9 @@ void MainWindow::tEditSendText_send_state(){
             // 符合条件后的代码逻辑
         }else if(temp_char.unicode()==10){//10是回车，也就是发送
             ui->tEditSendText->undo();
+            if(ui->pBtnSendData->isEnabled()){
+                on_pBtnSendData_clicked();
+            }
 //            qDebug()<<"发送hex";
         }else{
             ui->tEditSendText->undo();
@@ -324,9 +325,10 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
-
+//----tcp data recvied
 void MainWindow::tcpClientDataReceived(){
      while(tcpSocket->bytesAvailable() > 0){ // 读取缓冲区中的所有数据
+            datagram="";
             datagram.resize(tcpSocket->bytesAvailable());
             tcpSocket->read(datagram.data(),datagram.size());
             dst_ip_port=ui->cb_IpAddr->currentText()+":"+ui->lEditIpPort->text();
@@ -339,7 +341,7 @@ void MainWindow::udpDataReceived()
 {
     while(udpSocket->hasPendingDatagrams())
     {
-
+        datagram="";
         datagram.resize(udpSocket->pendingDatagramSize());
 
         //接数据,目的ip 和 目的port
