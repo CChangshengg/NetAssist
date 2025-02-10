@@ -30,7 +30,13 @@ make
 ## Automatic format conversion 格式自动转换
 ![image](https://github.com/user-attachments/assets/bc317d79-ae38-4b72-88d7-defa9b6aaa4c)
 
-Click HEX to automatically switch to HEX 点击HEX，自动转为HEX
+Click on HEX to automatically convert to HEX 点击HEX，自动转为HEX
 
 ![image](https://github.com/user-attachments/assets/829bf6ee-8267-4e70-921b-ac9cd48eaac1)
+
+# plans
+1.Switch between Chinese and English
+2.Added functionality for both sending and receiving areas
+3.Optimized the interface
+.....
 
