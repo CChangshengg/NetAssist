@@ -1,5 +1,5 @@
 # NetAssistant
-A network debugging assistant based on QT5.0.
+A network debugging assistant based on QT5.1.2
 #Features:
 1. UDP;
 2. TCP Server;
@@ -16,7 +16,7 @@ A network debugging assistant based on QT5.0.
 #Build
 ```
 git@github.com:CChangshengg/NetAssist.git
-cd
+cd NetAssist
 qmake
 make
 ```
