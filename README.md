@@ -13,3 +13,10 @@ A network debugging assistant based on QT5.0.
 10. Checksum transformation of the data in the send box;
 11. Fonts receive the selection of format and color in the receiving data area;
 
+#Build
+```
+git@github.com:CChangshengg/NetAssist.git
+cd
+qmake
+make
+```
