@@ -1,5 +1,8 @@
 # NetAssistant
 A network debugging assistant based on QT5.1.2
+## License
+This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+
 #Features:
 1. UDP;
 2. TCP Server;
