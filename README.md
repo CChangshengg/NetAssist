@@ -36,7 +36,10 @@ Click on HEX to automatically convert to HEX 点击HEX，自动转为HEX
 
 # plans
 1.Switch between Chinese and English
+
 2.Added functionality for both sending and receiving areas
+
 3.Optimized the interface
+
 .....
 
